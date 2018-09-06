@@ -1,0 +1,287 @@
+﻿/*-------------------------------------------------------------------------
+ * 2017-2-27 by ligen
+ * 独立道具xml解析
+ -------------------------------------------------------------------------*/
+
+(function () {
+    window.Xmlbag = {
+        bagCallBack: function (data, par, suitpolarArr, polarArr) {
+            var addDivDom = document.createElement('div');
+            addDivDom.className = "daojuShowDetailInfo";
+            addDivDom.style.display = "none";
+            par.appendChild(addDivDom);
+            var daojuShowDetailInfo = gy.getByClass("daojuShowDetailInfo", par)[0];
+            //8：背包(包括装备、法宝、首饰)
+            //data为请求成功后返回的xml文档
+            //执行getInnerNodeText方法 取得xml信息并返回json对象
+            var JSONdata = getInnerNodeText(data);
+            //执行compiled方法 传入json以及模板 执行拼接字符串方法
+            compiled(JSONdata);
+
+            //传一个参数最外层dom节点对象main，获取文档中所有节点的值 返回一个JSON对象
+            function getInnerNodeText(main) {
+                var htmlObjVal = {};
+
+                //seals为法宝中的才有的属性 这里先拿出来单独处理掉
+                var seals = main.getElementsByTagName("seal")[0];
+                if (seals) {
+                    var sealchildren = gy.getChildren(seals);
+                    var sealchildrenLength = sealchildren.length;
+                    for (var k = 0; k < sealchildrenLength; k++) {
+
+                        var nowSealNode = sealchildren[k];
+                        var nowSealNodename = sealchildren[k].nodeName.toLowerCase();
+
+                        if (nowSealNodename == "color") {
+                            htmlObjVal["seal_" + nowSealNodename] = gy.getColor(gy.getxmlnodeText(nowSealNode));
+                        } else {
+                            //标签里面存在颜色信息的时候 给他套上一个标签定义样式
+                            if (nowSealNode.getAttribute('color') && nowSealNode.getAttribute('color') != "") {
+
+                                var color = gy.getColor(nowSealNode.getAttribute('color'));
+
+                                if (htmlObjVal.hasOwnProperty("seal_" + nowSealNodename)) {
+
+                                    //nowSealNode.getAttribute('type') 看有没有type属性，部分存在type属性，其中存放的文字信息
+
+                                    nowSealNode.getAttribute('type') ? htmlObjVal["seal_" + nowSealNodename] += "<br/><span style=color:" + color + ">" + nowSealNode.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowSealNode)) + "</span>" : htmlObjVal["seal_" + nowSealNodename] += "<span style=color:" + color + ">" + gy.getxmlnodeText(nowSealNode) + "</span>";
+                                } else {
+                                    nowSealNode.getAttribute('type') ? htmlObjVal["seal_" + nowSealNodename] = "<span style=color:" + color + ">" + nowSealNode.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowSealNode)) + "</span>" : htmlObjVal["seal_" + nowSealNodename] = "<span style=color:" + color + ">" + gy.getxmlnodeText(nowSealNode) + "</span>";
+
+                                }
+                            } else { //不存在的时候
+                                if (htmlObjVal.hasOwnProperty("seal_" + nowSealNodename)) {
+                                    //nowEle.getAttribute('type') 看有没有type属性，部分存在type属性，其中存放的文字信息
+
+                                    nowSealNode.getAttribute('type') ? htmlObjVal["seal_" + nowSealNodename] += "<br/>" + nowSealNode.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowSealNode)) : htmlObjVal["seal_" + nowSealNodename] += gy.getxmlnodeText(nowSealNode);
+                                } else {
+                                    nowSealNode.getAttribute('type') ? htmlObjVal["seal_" + nowSealNodename] = nowSealNode.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowSealNode)) : htmlObjVal["seal_" + nowSealNodename] = gy.getxmlnodeText(nowSealNode);
+
+                                }
+
+                            }
+                        }
+                    }
+                }
+                eachInnerNode(arguments[0], htmlObjVal);
+                return htmlObjVal;
+            }
+
+            //查找对象main下的所有元素节点对象
+            //参数①：最外层节点对象main1
+            //参数②：一个空对象，用来存放innerHTML
+            function eachInnerNode(main1, obj1) {
+                var main = arguments[0]; //保存第一个参数
+                var obj = arguments[1];  //保存第二个参数
+
+                obj["holes"] = {};
+
+                var attribInfo = main.getElementsByTagName("attribs")[0];
+
+                var main_children = gy.getChildren(attribInfo); //获取最外层节点的所有子节点
+                var aLength = main_children.length; //当前子节点的长度
+                var i = 0;
+                var duity = "", bagexp = "", corties = "";
+                //遍历所有的子代元素，看其还有没有子代，如果有的话继续遍历子代，没有的话就返回当前元素的innerHTML
+                for (i; i < aLength; i++) {
+                    //nowEle 遍历中当前的节点
+                    var nowEle = main_children[i];
+                    if (nowEle.nodeName.toLowerCase() == "seal") {
+                        continue;
+                    }
+                    //当前节点的子节点长度
+                    var bLength = gy.getChildren(nowEle).length;
+                    //根据当前节点的子节点长度判断，如果子节点长度大于0 就继续遍历，没有子节点的话 就获取他的innerHTML
+                    if (bLength > 0) {
+                        arguments.callee(nowEle, obj); //继续执行当前函数
+                    } else {
+                        //nowEleNodeName 当前节点的名称
+                        var nowEleNodeName = nowEle.nodeName.toLowerCase();
+                        if (nowEleNodeName == "color") {
+
+                            obj[nowEle.nodeName.toLowerCase()] = gy.getColor(gy.getxmlnodeText(nowEle));
+                            var color = gy.getColor(gy.getxmlnodeText(nowEle));
+                        } else if (nowEleNodeName == "name") {
+                            obj[nowEle.nodeName.toLowerCase()] = "<span style=color:" + color + ">" + gy.getxmlnodeText(nowEle) + "</span>";
+                        } else if (nowEleNodeName == "polar") {
+
+                            obj[nowEle.nodeName.toLowerCase()] = polarArr[gy.getxmlnodeText(nowEle)];
+
+                        } else if (nowEleNodeName == "source") {
+                            obj[nowEle.nodeName.toLowerCase()] = gy.getxmlnodeText(nowEle) + "出品";
+                        } else if (nowEleNodeName == "icon") {
+
+                            obj[nowEle.nodeName.toLowerCase()] = gy.getxmlnodeText(nowEle);
+
+                        } else if (nowEleNodeName == "suit_polar") {
+                            obj[nowEle.nodeName.toLowerCase()] = '&nbsp;<img src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/' + suitpolarArr[gy.getxmlnodeText(nowEle)] + '.png" alt=""/ style="width:12px;">';
+                        } else if (nowEleNodeName == "seal_icon") {
+                            obj[nowEle.nodeName.toLowerCase()] = '&nbsp;<img src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/4575.png" alt=""/>';
+                        } else if (nowEleNodeName == "holes") {
+                            if (nowEle.getAttribute("color")) {//根据样式把镶嵌的宝石变灰去色
+                                obj[nowEle.nodeName.toLowerCase()]["hole" + nowEle.getAttribute("pos")] = gy.getxmlnodeText(nowEle) + "_";
+                            } else {
+                                obj[nowEle.nodeName.toLowerCase()]["hole" + nowEle.getAttribute("pos")] = gy.getxmlnodeText(nowEle);
+                            }
+                        } else if (nowEleNodeName == "rebuild_level") {
+                            obj[nowEle.nodeName.toLowerCase()] = "(" + gy.getxmlnodeText(nowEle) + ")";
+                        } else if (nowEleNodeName == "evolve_level") {
+                            if (gy.getxmlnodeText(nowEle) > 0) {
+                                obj[nowEle.nodeName.toLowerCase()] = '&nbsp;' + gy.getStar(gy.getxmlnodeText(nowEle));
+                            } else {
+                                obj[nowEle.nodeName.toLowerCase()] = "";
+                            }
+                        } else if (nowEleNodeName == "property_bind_attrib") {
+                            //装备专有图标(1、认主绑定 2、解绑中 3、临时解绑 4、永久绑定)
+                            if (gy.getxmlnodeText(nowEle) == "1") {
+                                obj[nowEle.nodeName.toLowerCase()] = '<br/><img width="16" src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/6117.png" style="margin-left:100px; width:16px;">';
+                            } else if (gy.getxmlnodeText(nowEle) == "2") {
+                                obj[nowEle.nodeName.toLowerCase()] = '<br/><img width="16" src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/6115.png" style="margin-left:100px; width:16px;">';
+                            } else if (gy.getxmlnodeText(nowEle) == "3") {
+                                obj[nowEle.nodeName.toLowerCase()] = '<br/><img width="16" src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/6113.jpg" style="margin-left:100px; width:16px;">';
+                            } else if (gy.getxmlnodeText(nowEle) == "4") {
+                                obj[nowEle.nodeName.toLowerCase()] = '<br/><img width="16" src="http://img.gyyxcdn.cn/qibao/Images/FlashImages/6111.png" style="margin-left:100px; width:16px;">';
+                            }
+                        } else if (nowEleNodeName == "level") {
+                            obj[nowEle.nodeName.toLowerCase()] = '等级：' + gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "nimbus") {
+                            obj[nowEle.nodeName.toLowerCase()] = '灵气：' + gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "req_level") {
+                            obj[nowEle.nodeName.toLowerCase()] = '携带等级：' + gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "upgrade_type") {
+                            switch (gy.getxmlnodeText(nowEle)) {
+                                case "1":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：武器';
+                                    break;
+                                case "2":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：头盔';
+                                    break;
+                                case "3":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：衣服';
+                                    break;
+                                case "10":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：鞋子';
+                                    break;
+                                case "11":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：娃娃手镯';
+                                    break;
+                                case "12":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：娃娃肚兜';
+                                    break;
+                                case "13":
+                                    obj[nowEle.nodeName.toLowerCase()] = '类型：娃娃脚环';
+                                    break;
+                            }
+                        } else if (nowEleNodeName == "durability") {
+                            duity = gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "max_durability") {
+                            obj[nowEle.nodeName.toLowerCase()] = '耐久度：' + duity + '/ ' + gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "exp") {
+                            bagexp = gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "exp_to_next_level") {
+                            if (bagexp == 0 && gy.getxmlnodeText(nowEle) == 0) {
+                                obj[nowEle.nodeName.toLowerCase()] = "";
+                            } else {
+                                obj[nowEle.nodeName.toLowerCase()] = '经验：' + bagexp + '/ ' + gy.getxmlnodeText(nowEle);
+                            }
+                        } else if (nowEleNodeName == "item_polar") {
+                            obj[nowEle.nodeName.toLowerCase()] = gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "seal_polar") {
+                            obj[nowEle.nodeName.toLowerCase()] = gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "seal_level") {
+                            obj[nowEle.nodeName.toLowerCase()] = '等级：' + gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "convert_times") {
+                            corties = gy.getxmlnodeText(nowEle);
+                        } else if (nowEleNodeName == "max_convert_times") {
+                            if (corties == 0 && gy.getxmlnodeText(nowEle) == 0) {
+                                obj[nowEle.nodeName.toLowerCase()] = "";
+                            } else {
+                                obj[nowEle.nodeName.toLowerCase()] = "可转换次数：" + (gy.getxmlnodeText(nowEle) - corties) + "/" + gy.getxmlnodeText(nowEle)
+                            }
+                        } else {
+                            //标签里面存在颜色信息的时候 给他套上一个标签定义样式
+                            if (nowEle.getAttribute('color') && nowEle.getAttribute('color') != "") {
+
+                                var color = gy.getColor(nowEle.getAttribute('color'));
+
+                                if (obj.hasOwnProperty(nowEleNodeName)) {
+                                    //console.log(nowEleNodeName+'--'+nowEle.getAttribute('type') + '---' + gy.getxmlnodeText(nowEle));
+                                    //nowEle.getAttribute('type') 看有没有type属性，部分存在type属性，其中存放的文字信息
+                                    if (gy.getxmlnodeText(nowEle).indexOf(",") != -1) {//处理“所有相性 4 增加 (+1.02%)”这种格式，进行两次替换
+                                        var index = gy.getxmlnodeText(nowEle).lastIndexOf(',');
+                                        obj[nowEle.nodeName.toLowerCase()] += "<br/><span style=color:" + color + ">" + nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle).substring(0, index)).replace(/[(]%s[)]/, "") + "&nbsp;<span style='color:#ff2020'>(" + gy.getxmlnodeText(nowEle).substring((index + 1), gy.getxmlnodeText(nowEle).length) + ")</span></span>";
+                                    } else {
+                                        if (nowEleNodeName == "basic_attrib") {
+                                            var index = nowEle.getAttribute('type').lastIndexOf('：');
+                                            obj[nowEle.nodeName.toLowerCase()] += "<br/><span>" + nowEle.getAttribute('type').substring(0, (index + 1)) + "</span>" + "<span style=color:" + color + ">" + nowEle.getAttribute('type').substring((index + 1), gy.getxmlnodeText(nowEle)).replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) + "</span>";
+                                        } else {
+                                            nowEle.getAttribute('type') ? obj[nowEle.nodeName.toLowerCase()] += "<br/><span style=color:" + color + ">" + nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) + "</span>" : obj[nowEle.nodeName.toLowerCase()] += "<span style=color:" + color + ">" + gy.getxmlnodeText(nowEle) + "</span>";
+                                        }
+                                    }
+                                } else {
+                                    if (gy.getxmlnodeText(nowEle).indexOf(",") != -1) {//处理“所有相性 4 增加 (+1.02%)”这种格式，进行两次替换
+                                        var index = gy.getxmlnodeText(nowEle).lastIndexOf(',');
+                                        obj[nowEle.nodeName.toLowerCase()] = "<span style=color:" + color + ">" + nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle).substring(0, index)).replace(/[(]%s[)]/, "") + "&nbsp;<span style='color:#ff2020'>(" + gy.getxmlnodeText(nowEle).substring((index + 1), gy.getxmlnodeText(nowEle).length) + ")</span></span>";
+                                    } else {
+                                        if (nowEleNodeName == "basic_attrib") {
+                                            var index = nowEle.getAttribute('type').lastIndexOf('：');
+                                            obj[nowEle.nodeName.toLowerCase()] = "<span>" + nowEle.getAttribute('type').substring(0, (index + 1)) + "</span>" + "<span style=color:" + color + ">" + nowEle.getAttribute('type').substring((index + 1), gy.getxmlnodeText(nowEle)).replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) + "</span>";
+                                        } else {
+                                            nowEle.getAttribute('type') ? obj[nowEle.nodeName.toLowerCase()] = "<span style=color:" + color + ">" + nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) + "</span>" : obj[nowEle.nodeName.toLowerCase()] = "<span style=color:" + color + ">" + gy.getxmlnodeText(nowEle) + "</span>";
+                                        }
+                                    }
+                                }
+                            } else { //不存在的时候
+                                if (obj.hasOwnProperty(nowEleNodeName)) {
+                                    //nowEle.getAttribute('type') 看有没有type属性，部分存在type属性，其中存放的文字信息
+                                    nowEle.getAttribute('type') ? obj[nowEle.nodeName.toLowerCase()] += "<br/>" + nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) : obj[nowEle.nodeName.toLowerCase()] += gy.getxmlnodeText(nowEle);
+                                } else {
+                                    nowEle.getAttribute('type') ? obj[nowEle.nodeName.toLowerCase()] = nowEle.getAttribute('type').replace(/%s%|%s/, gy.getxmlnodeText(nowEle)) : obj[nowEle.nodeName.toLowerCase()] = gy.getxmlnodeText(nowEle);
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            //传入两个参数 ①一个json数据 ②一个html模板结构  绑定json数据到模板上然后返回一个jquery对象
+            function compiled(JSONdata) {
+                var hasNoneArr = [];
+                //匹配模板
+                var tempString = templateString.bag;
+                var compiledString = tempString.replace(/@([\w_-]*)@/g, function (a, b) {
+                    //如果json存在当前数据就返回这个数据，没有就返回空值并且把这个值放进数组
+                    if (b == "hole1" || b == "hole2" || b == "hole3") {
+                        if (JSONdata["holes"][b] != undefined) {
+                            return JSONdata["holes"][b];
+                        } else {
+                            return "undefined";//如果没有hole属性，图片用undefined.png代替
+                        }
+                    }
+                    if (JSONdata.hasOwnProperty(b)) {
+                        if (b == "item_polar" || b == "seal_polar") return "相性：" + polarArr[JSONdata[b]];
+                        if (b == "seal_level") {
+                            return "等级：" + JSONdata[b];
+                        }
+                        return JSONdata[b];
+                    } else {
+                        if (b == "color" || b == "icon" || b == "exp_to_next_level" || b == "max_durability" || b == "suit_polar" || b == "max_convert_times") {
+                            return "";
+                        }
+                        hasNoneArr.push(b);
+                        return "";
+                    }
+                });
+
+                //调用gy.parseHTML方法，将匹配好的html字符串转换为html文档对象
+                var domCompiledString = gy.parseHTML(compiledString);
+                daojuShowDetailInfo.appendChild(domCompiledString); //添加到dom中
+                eqdatalist = domCompiledString;
+                par.setAttribute("isGetXmlAjax", "true");//加载成功后 给他一个自定义属性，根据这个属性判断第二次就不需要加载ajax了
+                // }
+
+            }
+        }
+    }
+})();

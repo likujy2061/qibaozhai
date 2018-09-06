@@ -1,0 +1,1 @@
+<%if request.querystring="v=1.0.0" then    server.transfer("PageStat.js_v=1.0.0") %>﻿document.write("<script language='javascript' type='text/javascript' src=' /a.gyyx.cn/StatServer.ashx?v=&s=30&r=" + document.referrer + "'></script>");

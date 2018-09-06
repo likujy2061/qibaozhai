@@ -1,0 +1,161 @@
+﻿/*-------------------------------------------------------------------------
+ * 2017-2-27 by ligen
+ * 独立道具xml解析
+ -------------------------------------------------------------------------*/
+
+(function () {
+    window.Xmlsuit = {
+        suitListCallBack: function (data, viewid, par, suitpolarArr, polarArr) {
+            var addDivDom = document.createElement('div');
+            addDivDom.className = "daojuShowDetailInfo";
+            addDivDom.style.display = "none";
+            par.appendChild(addDivDom);
+            var daojuShowDetailInfo = gy.getByClass("daojuShowDetailInfo", par)[0];
+            //9：套装列表 执行ajax请求xml成功后的回调函数
+            //data为请求成功后返回的xml文档
+            //执行getInnerNodeText方法 取得xml信息并返回json对象
+            var JSONdata = getInnerNodeText(data);
+            var suitindex;
+            //执行compiled方法 传入json以及模板 执行拼接字符串方法
+            compiled(JSONdata);
+
+            //传一个参数最外层dom节点对象main，获取文档中所有节点的值 返回一个JSON对象
+            function getInnerNodeText(main) {
+                var obj = {};
+                obj['icon'] = "<ul>"
+                suitindex = 0;
+                eachInnerNode(arguments[0], obj);
+                obj['icon'] += "</ul>"
+                return obj;
+            }
+
+            //查找对象main下的所有元素节点对象
+            //参数①：最外层节点对象main1
+            //参数②：一个空对象，用来存放innerHTML
+            function eachInnerNode(main1, obj1) {
+                var main = arguments[0]; //保存第一个参数
+                var obj = arguments[1];  //保存第二个参数
+                var main_children = gy.getChildren(main); //获取最外层节点的所有子节点
+                var aLength = main_children.length; //当前子节点的长度
+                var i = 0;
+                //obj['icon'] = "<ul>"
+                //遍历所有的子代元素，看其还有没有子代，如果有的话继续遍历子代，没有的话就返回当前元素的innerHTML
+                for (i; i < aLength; i++) {
+                    //nowEle 遍历中当前的节点
+                    var nowEle = main_children[i];
+                    if (nowEle.nodeName.toLowerCase() == "seal") {
+                        continue;
+                    }
+                    //当前节点的子节点长度
+                    var bLength = gy.getChildren(nowEle).length;
+                    //根据当前节点的子节点长度判断，如果子节点长度大于0 就继续遍历，没有子节点的话 就获取他的innerHTML
+                    if (bLength > 0) {
+                        arguments.callee(nowEle, obj); //继续执行当前函数
+                    } else {
+                        //nowEleNodeName 当前节点的名称
+                        var nowEleNodeName = nowEle.nodeName.toLowerCase();
+                        if (nowEleNodeName == "icon") {
+                            obj['icon'] += "<li class='js_suit' data-suitidx=" + suitindex + "><img class='' src='http://img.gyyxcdn.cn/qibao/Images/itemImages/" + gy.getxmlnodeText(nowEle) + ".jpg' style='width:50px;height:50px;'></li>";
+                            suitindex++;
+                        }
+                    }
+                }
+                //
+            }
+
+            //传入两个参数 ①一个json数据 ②一个html模板结构  绑定json数据到模板上然后返回一个jquery对象
+            function compiled(JSONdata) {
+                var hasNoneArr = []; //保存模板中有的标签 而json中没有的数据
+
+                /*  //让图片加载完成之后在绑定数据添加DOM
+                 //创建image对象
+                 var image = new Image();
+                 //定义图片地址
+                 image.src = "/Images/BigItemImages/"+JSONdata.icon+".jpg";
+                 //图片加载完毕之后匹配模版
+                 image.onload = function(){*/
+                //匹配模板
+                var tempString = templateString.suit;
+                var compiledString = tempString.replace(/@([\w_-]*)@/g, function (a, b) {
+                    //如果json存在当前数据就返回这个数据，没有就返回空值并且把这个值放进数组
+                    if (JSONdata.hasOwnProperty(b)) {
+                        return JSONdata[b];
+                    } else {
+                        hasNoneArr.push(b);
+                        return "";
+                    }
+                });
+
+                //调用gy.parseHTML方法，将匹配好的html字符串转换为html文档对象
+                var domCompiledString = gy.parseHTML(compiledString);
+
+                daojuShowDetailInfo.appendChild(domCompiledString); //添加到dom中
+                par.setAttribute("isGetXmlAjax", "true");//加载成功后 给他一个自定义属性，根据这个属性判断第二次就不需要加载ajax了
+
+                //找到人物详情xml中的equip下面的item，单独为遍历装备使用
+                suitarrda = data.getElementsByTagName("suit")[0].getElementsByTagName("item");
+
+                //绑定套装详情的鼠标经过事件，要单独遍历人物详情中suit中的item标签
+
+                var suitDiv = daojuShowDetailInfo.getElementsByTagName("li");
+                var suitDivlength = suitDiv.length;
+                for (var i = 0; i < suitDivlength; i++) {
+                    var addDivDom = document.createElement('div');
+                    addDivDom.className = "daojuShowDetailInfos";
+                    addDivDom.style.display = "none";
+                    if (viewid == "1") {
+                        var closesuit = document.createElement('span');
+                        closesuit.className = "suitclose";
+                        addDivDom.appendChild(closesuit);
+                    }
+                    suitDiv[i].appendChild(addDivDom);
+                    var daojuShowDetailInfos = gy.getByClass("daojuShowDetailInfos", suitDiv[i])[0];
+                    var chillen = suitDiv[i].children.length - 1;//最后一个元素
+                    Xmlbag.bagCallBack(suitarrda[i], par, suitpolarArr,polarArr);
+                    suitDiv[i].children[chillen].appendChild(eqdatalist);
+                    if (viewid == "0") {
+                        //鼠标经过时根据data-suitidx（item标签索引）和data-id（物品分类）显示当前物品信息
+                        //解决ie浏览器划过时闪动问题
+                        $(function () {
+                            $("#templateString_suit ul li").mouseenter(function () {
+                                var chillen = this.children.length - 1;//最后一个元素
+                                this.children[chillen].style.display = "block";
+                            });
+                            $("#templateString_suit ul li").mouseleave(function () {
+                                var chillen = this.children.length - 1;//最后一个元素
+                                this.children[chillen].style.display = "none";
+                            });
+                        });
+                        //suitDiv[i].onmouseover = function () {
+                        //    var chillen = this.children.length - 1;//最后一个元素
+                        //    this.children[chillen].style.display = "block";
+                        //};
+                        //suitDiv[i].onmouseout = function () {
+                        //    var chillen = this.children.length - 1;//最后一个元素
+                        //    this.children[chillen].style.display = "none";
+                        //};
+                    } else {
+                        //鼠标点击时根据data-suitidx（item标签索引）和data-id（物品分类）显示当前物品信息
+                        suitDiv[i].onclick = function () {
+                            var chillen = this.children.length - 1;//最后一个元素
+                            for (var j = 0; j < gy.getByClass("js_suit", daojuShowDetailInfo).length; j++) {
+                                gy.getByClass("js_suit", daojuShowDetailInfo)[j].children[chillen].style.display = "none";
+                                gy.getByClass("js_suit", daojuShowDetailInfo)[j].children[0].className = "filters";
+                                gy.getByClass("suitclose", daojuShowDetailInfo)[j].onclick = function (e) {
+                                    window.event ? window.event.cancelBubble = true : e.stopPropagation();
+                                    for (var k = 0; k < gy.getByClass("js_suit", suitDiv[j]).length; k++) {
+                                        gy.getByClass("js_suit", suitDiv[j])[k].children[0].className = "";
+                                    }
+
+                                    this.parentNode.style.display = "none";
+                                };
+                            }
+                            this.children[chillen].style.display = "block";
+                            this.children[0].className = "";
+                        };
+                    }
+                }
+            }
+        }
+    }
+})();

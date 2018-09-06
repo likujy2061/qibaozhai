@@ -1,0 +1,23 @@
+[I 180326 16:34:36 passport:8] info msg
+[W 180326 16:34:36 passport:9] warnig msg
+[E 180326 16:34:36 passport:10] error msg
+[I 180326 16:34:36 web:2108] 304 GET / (127.0.0.1) 1.50ms
+[I 180327 10:11:02 passport:9] info msg
+[W 180327 10:11:02 passport:10] warnig msg
+[I 180327 10:11:02 web:2108] 304 GET / (127.0.0.1) 7.01ms
+[W 180327 10:11:03 web:2108] 404 GET /favicon.ico (127.0.0.1) 0.99ms
+[I 180327 10:11:10 passport:9] info msg
+[W 180327 10:11:10 passport:10] warnig msg
+[I 180327 10:11:10 web:2108] 304 GET / (127.0.0.1) 2.01ms
+[W 180327 10:12:58 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 0.50ms
+[W 180327 10:13:27 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 1.00ms
+[W 180327 10:13:48 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 1.00ms
+[W 180327 10:13:49 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 0.50ms
+[W 180327 10:13:49 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 0.00ms
+[W 180327 10:13:49 web:2108] 404 GET /api/piccode%EF%BC%9Fcur_code_id=1&pre_code_id= (127.0.0.1) 0.99ms
+[I 180327 10:14:13 passport:9] info msg
+[W 180327 10:14:13 passport:10] warnig msg
+[I 180327 10:14:13 web:2108] 304 GET / (127.0.0.1) 2.00ms
+[I 180327 10:14:19 passport:9] info msg
+[W 180327 10:14:19 passport:10] warnig msg
+[I 180327 10:14:19 web:2108] 304 GET / (127.0.0.1) 1.00ms
